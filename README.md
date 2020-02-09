@@ -9,4 +9,5 @@ dependencies:
   neural_network:
     git:
       url: git://github.com/adamfuller/neural_network.git
+      ref: 0.0.1-b
 ```

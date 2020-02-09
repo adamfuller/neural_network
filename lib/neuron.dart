@@ -49,6 +49,13 @@ class Neuron {
     }
   }
 
+  /// Randomly adjust the weights of all contained neurons
+  void mutate() {
+    for (int i = 0; i < this.weights.length; i++) {
+      weights[i] += (2 * Network.r.nextDouble() - 1) * Network.mutationFactor;
+    }
+  }
+
   double _sigmoid(double x) => 1.0 / (1.0 + exp(-x));
   double _sigmoidDerivative(double x) => _sigmoid(x) * (1.0 - _sigmoid(x));
   double _sigmoidishDerivative(double x) => x * (1.0 - x);

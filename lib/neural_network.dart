@@ -9,6 +9,7 @@ part 'neuron.dart';
 class Network {
   static ActivationFunction activationFunction;
   static double learningFactor = 0.033;
+  static double mutationFactor = 0.0033;
   static Random r = Random();
   List<Layer> layers;
   int timesRun = 0;
@@ -68,6 +69,7 @@ class Network {
   factory Network.fromJson(Map<String, dynamic> map) {
     Network.learningFactor = map["learningFactor"];
     Network n = Network([0]);
+    Network.mutationFactor = map["mutationFactor"] ?? Network.mutationFactor;
     n.layers = map["layers"].map<Layer>((lString) => Layer.fromJson(lString)).toList();
     n.timesRun = map["timesRun"];
     n.averagePercentError = map["averagePercentError"];
@@ -81,6 +83,7 @@ class Network {
     var output = {
       "timesRun": this.timesRun,
       "learningFactor": Network.learningFactor,
+      "mutationFactor": Network.mutationFactor,
       "averagePercentError": this.averagePercentError,
       "pastErrors": this._pastErrors,
       "lastOutput": this._lastOutput,
@@ -99,6 +102,17 @@ class Network {
         neuron.reset();
       }
     }
+  }
+
+  Network produceMutation() {
+    Network copy = Network.fromJson(this.toJson());
+    copy.mutate();
+    return copy;
+  }
+
+  /// Randomly adjust the weights of all contained neurons
+  void mutate() {
+    this.layers.forEach((l) => l.mutate());
   }
 
   /// Returns the output of this network for input __inputs__

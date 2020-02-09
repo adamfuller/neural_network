@@ -58,6 +58,11 @@ class Layer {
     }
   }
 
+  /// Randomly adjust the weights of all contained neurons
+  void mutate(){
+    this.neurons.forEach((n) => n.mutate());
+  }
+
   List<double> forwardPropagation(List<double> inputs) {
     neurons.forEach((n) => n.forwardPropagation(inputs));
 
