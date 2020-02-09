@@ -6,7 +6,7 @@ A Flutter package to simplify the use of Neural Networks
 Add the following to **`pubspec.yaml`**
 ```yaml
 dependencies:
-  custom_widget:
+  neural_network:
     git:
       url: git://github.com/adamfuller/neural_network.git
 ```
