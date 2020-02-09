@@ -23,7 +23,7 @@ class Neuron {
   factory Neuron.fromJson(Map<String, dynamic> map) {
     Neuron n = Neuron(0);
     n.weights = map["weights"];
-    n.weightAdj = map["weightsAdj"];
+    n.weightAdj = map["weightAdj"];
     n.inputs = map["inputs"];
     n.error = map["error"];
     n.output = map["output"];
@@ -34,8 +34,8 @@ class Neuron {
   Map<String, dynamic> toJson() {
     var output = {
       "weights": weights.map<double>((n) => n.isNaN ? 1 : n).toList(),
-      "weightAdj": weightAdj.map<double>((n) => n.isNaN ? 0 : n).toList(),
-      "inputs": inputs.map<double>((n) => n.isNaN ? 1 : n).toList(),
+      "weightAdj": weightAdj?.map<double>((n) => n.isNaN ? 0 : n)?.toList() ?? [],
+      "inputs": inputs?.map<double>((n) => n.isNaN ? 1 : n)?.toList() ?? [],
       "error": (error?.isNaN) ?? true ? 0 : error,
       "output": this.output?.isNaN ?? true ? 0 : this.output,
       "delta": delta?.isNaN ?? true ? 0 : delta,
