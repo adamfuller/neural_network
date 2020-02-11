@@ -2,6 +2,11 @@
 
 A Flutter package to simplify the use of Neural Networks
 
+## TODO
+ - [ ] Perform training in an isolate (added 11 Feb 2020)
+ - [ ] Options for Stochastic, Mini-batch, and Batch (added 11 Feb 2020)
+ - - [ ] Interface for batch size (added 11 Feb 2020)
+
 ## How to install
 Add the following to **`pubspec.yaml`**
 ```yaml
