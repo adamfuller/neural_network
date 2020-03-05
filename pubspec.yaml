@@ -1,6 +1,6 @@
 name: neural_network
-description: A new Flutter package project.
-version: 0.0.1
+description: Flutter package to simplify the use of Neural Networks
+version: 0.1.0
 author: Adam Fuller
 homepage: https://github.com/adamfuller/neural_network
 

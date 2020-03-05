@@ -1,14 +1,65 @@
 part of "neural_network.dart";
 
 class Neuron {
+  static double _sigmoid(double x) => 1.0 / (1.0 + exp(-x));
+  static double _sigmoidDerivative(double x) => _sigmoid(x) * (1.0 - _sigmoid(x));
+  static double _sigmoidishDerivative(double x) => x * (1.0 - x);
+
+  static double _tanh(double x) => (exp(x) - exp(-x)) / (exp(x) + exp(-x));
+  static double _tanhDerivative(double x) => 1.0 - (x * x);
+
+  static double _relu(double x) => x > 0.0 ? x : 0.0;
+  static double _reluDerivative(double x) => x > 0.0 ? 1.0 : 0.0;
+
+  static double _leakyRelu(double x) => x > 0.0 ? x : 0.1 * x;
+  static double _leakyReluDerivative(double x) => x > 0.0 ? 1.0 : 0.1;
+
   List<double> weights;
   List<double> weightAdj;
   double delta = 0.0;
   double error = 0.0;
   List<double> inputs;
   double output = 0.0;
+  double learningRate;
+  ActivationFunction _activationFunction = ActivationFunction.leakyRelu;
+  double Function(double) _normalize = _leakyRelu;
+  double Function(double) _normalizeDerivative = _leakyReluDerivative;
 
-  Neuron(int inputCount) {
+  /// Returns the current activation function
+  ActivationFunction get activationFunction => _activationFunction;
+
+  /// Update normalization and normalizationDerivative methods
+  set activationFunction(ActivationFunction af) {
+    _activationFunction = af;
+    switch (af) {
+      case ActivationFunction.leakyRelu:
+        _normalize = _leakyRelu;
+        _normalizeDerivative = _leakyReluDerivative;
+        break;
+      case ActivationFunction.relu:
+        _normalize = _relu;
+        _normalizeDerivative = _reluDerivative;
+        break;
+      case ActivationFunction.sigmoid:
+        _normalize = _sigmoid;
+        _normalizeDerivative = _sigmoidDerivative;
+        break;
+      case ActivationFunction.sigmoidish:
+        _normalize = _sigmoid;
+        _normalizeDerivative = _sigmoidishDerivative;
+        break;
+      case ActivationFunction.tanh:
+        _normalize = _tanh;
+        _normalizeDerivative = _tanhDerivative;
+        break;
+    }
+  }
+
+  Neuron(
+    int inputCount, {
+    double learningRate,
+    ActivationFunction activationFunction,
+  }) {
     this.weights = List<double>();
     this.weightAdj = List<double>();
     this.inputs = List<double>();
@@ -18,27 +69,33 @@ class Neuron {
       weights.add(2 * Network.r.nextDouble() - 1);
       weightAdj.add(0.0);
     }
+    this.learningRate = learningRate ?? _defaultLearningRate;
+    this.activationFunction = activationFunction ?? _defaultActivationFunction;
   }
 
   factory Neuron.fromJson(Map<String, dynamic> map) {
     Neuron n = Neuron(0);
     n.weights = map["weights"];
-    n.weightAdj = map["weightAdj"];
+    n.weightAdj = map["weightsAdj"];
     n.inputs = map["inputs"];
     n.error = map["error"];
     n.output = map["output"];
     n.delta = map["delta"];
+    n.learningRate = map["learningRate"];
+    n.activationFunction = ActivationFunction.values[map["activationFunction"]];
     return n;
   }
 
   Map<String, dynamic> toJson() {
     var output = {
       "weights": weights.map<double>((n) => n.isNaN ? 1 : n).toList(),
-      "weightAdj": weightAdj?.map<double>((n) => n.isNaN ? 0 : n)?.toList() ?? [],
+      "weightsAdj": weightAdj?.map<double>((n) => n.isNaN ? 0 : n)?.toList() ?? [],
       "inputs": inputs?.map<double>((n) => n.isNaN ? 1 : n)?.toList() ?? [],
       "error": (error?.isNaN) ?? true ? 0 : error,
       "output": this.output?.isNaN ?? true ? 0 : this.output,
       "delta": delta?.isNaN ?? true ? 0 : delta,
+      "learningRate": this.learningRate,
+      "activationFunction": ActivationFunction.values.indexOf(this.activationFunction ?? ActivationFunction.sigmoid),
     };
     return output;
   }
@@ -49,85 +106,38 @@ class Neuron {
     }
   }
 
-  /// Randomly adjust the weights of all contained neurons
   void mutate() {
     for (int i = 0; i < this.weights.length; i++) {
       weights[i] += (2 * Network.r.nextDouble() - 1) * Network.mutationFactor;
     }
   }
 
-  double _sigmoid(double x) => 1.0 / (1.0 + exp(-x));
-  double _sigmoidDerivative(double x) => _sigmoid(x) * (1.0 - _sigmoid(x));
-  double _sigmoidishDerivative(double x) => x * (1.0 - x);
+  
 
-  double _tanh(double x) => (exp(x) - exp(-x)) / (exp(x) + exp(-x));
-  double _tanhDerivative(double x) => 1.0 - (x * x);
-
-  double _relu(double x) => x > 0.0 ? x : 0.0;
-  double _reluDerivative(double x) => x > 0.0 ? 1.0 : 0.0;
-
-  double _leakyRelu(double x) => x > 0.0 ? x : 0.1 * x;
-  double _leakyReluDerivative(double x) => x > 0.0 ? 1.0 : 0.1;
-
-  // double _softplus(double x) {
-  //   var val = log(1 + exp(x));
-  //   if (val.isNaN || val.isInfinite) {
-  //     return (2 * Network.r.nextDouble() - 1);
-  //   }
-  //   return val;
-  // }
-
-  // double _softplusDerivative(double x) {
-  //   var val = 1.0 / (1.0 + exp(-x));
-  //   return val;
-  // }
-
-  double _normalize(double x) {
-    switch (Network.activationFunction) {
-      case ActivationFunction.relu:
-        return _relu(x);
-      case ActivationFunction.leakyRelu:
-        return _leakyRelu(x);
-      case ActivationFunction.sigmoid:
-        return _sigmoid(x);
-      case ActivationFunction.sigmoidish:
-        return _sigmoid(x);
-      case ActivationFunction.tanh:
-        return _tanh(x);
-      // case ActivationFunction.softplus:
-      //   return _softplus(x);
-      default:
-        return _sigmoid(x);
+  double _softplus(double x) {
+    var val = log(1 + exp(x));
+    if (val.isNaN || val.isInfinite) {
+      return (2 * Network.r.nextDouble() - 1);
     }
+    return val;
   }
 
-  double _normalizeDerivative(double x) {
-    switch (Network.activationFunction) {
-      case ActivationFunction.relu:
-        return _reluDerivative(x);
-      case ActivationFunction.leakyRelu:
-        return _leakyReluDerivative(x);
-      case ActivationFunction.sigmoid:
-        return _sigmoidDerivative(x);
-      case ActivationFunction.tanh:
-        return _tanhDerivative(x);
-      // case ActivationFunction.softplus:
-      //   return _softplusDerivative(x);
-      case ActivationFunction.sigmoidish:
-        return _sigmoidishDerivative(x);
-      default:
-        return _sigmoidDerivative(x);
-    }
+  double _softplusDerivative(double x) {
+    var val = 1.0 / (1.0 + exp(-x));
+    return val;
   }
 
   ///Adjust weights to comply with a given input
   void _adjustForInput(List<double> input) {
-    this.inputs = input;
-    if (this.weights.length == input.length) return;
+    // Add the bias to the input
+    this.inputs = [1.0].followedBy(input).toList();
+
+    // If we already adjusted exit
+    if (this.weights.length == this.inputs.length) return;
 
     // Adjust if input is too large
-    if (input.length >= weights.length) {
-      for (int i = weights.length; i < input.length; i++) {
+    if (this.inputs.length >= weights.length) {
+      for (int i = weights.length; i < this.inputs.length; i++) {
         weights.add((2 * Network.r.nextDouble() - 1));
         weightAdj.add(0.0);
       }
@@ -142,7 +152,7 @@ class Neuron {
   /// Calculate the output of this neuron for a given input
   double forwardPropagation(List<double> input) {
     output = 0;
-    // Adjust the weights based on the input
+    // Adjust the weights based on the input and add bias
     _adjustForInput(input);
 
     //
@@ -173,11 +183,11 @@ class Neuron {
     weightAdj = inputs.map<double>((i) => i * delta).toList();
   }
 
-  void backPropagationHidden(List<double> deltaForward, List<double> weightsForward) {
+  void backPropagationHidden(List<double> nextLayerDeltas, List<double> nextLayerWeights) {
     delta = 0;
     // Pulling each weight corresponding to this neuron in the layer
-    for (int j = 0; j < deltaForward.length; j++) {
-      delta += deltaForward[j] * weightsForward[j];
+    for (int j = 0; j < nextLayerDeltas.length; j++) {
+      delta += nextLayerDeltas[j] * nextLayerWeights[j];
     }
     delta *= _normalizeDerivative(output);
 
@@ -191,7 +201,7 @@ class Neuron {
   void applyAdjustments() {
     double maxWeight = 0;
     for (int i = 0; i < this.weights.length; i++) {
-      weights[i] += weightAdj[i] * Network.learningFactor;
+      weights[i] += weightAdj[i] * learningRate;
       if (weights[i].abs() > maxWeight) maxWeight = weights[i].abs();
     }
     // normalize the weights??
@@ -207,4 +217,5 @@ enum ActivationFunction {
   sigmoid,
   sigmoidish,
   tanh,
+  // softplus,
 }
